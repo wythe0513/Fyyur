@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify, abort, session
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -26,10 +26,13 @@ app.config.from_object('config')
 db = SQLAlchemy(app)
 
 # TODO: connect to a local postgresql database
-migrate = Migrate
+migrate = Migrate(app, db)
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
+# by SF
+from sqlalchemy import Column, String, Integer, Boolean, ARRAY, ForeignKey
+
 
 class Venue(db.Model):
     __tablename__ = 'Venue'
@@ -44,6 +47,9 @@ class Venue(db.Model):
     facebook_link = db.Column(db.String(120))
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    def __repr__(self):
+        return '<Venue {}>'.format(self.name)
+
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
@@ -60,9 +66,9 @@ class Artist(db.Model):
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-@app.cli.command('initdb')
-def initdb():
-    db.create_all()
+#@app.cli.command('initdb')
+#def initdb():
+#    db.create_all()
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -93,31 +99,20 @@ def index():
 def venues():
 
 
+
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-    venues_list = Venue.query.order_by(Venue.city, Venue.state).all()
+
+    areas = db.session.query(Venue.city, Venue.state).distinct(Venue.city, Venue.state).order_by('state').all()
     data = []
-    city_state = ''
-    for venue in venues_list:
-        num_upcoming_shows = db.session.query(Venue).join(Show).\
-            filter(Venue.id == venue.id, Show.start_time > datetime.now()).count()
-        if city_state == venue.city + venue.state:
-            data[len(data) - 1]['venues'].append({
-                'id': venue.id,
-                'name': venue.name,
-                'num_upcoming_shows': num_upcoming_shows
-            })
-        else:
-            data.append({
-                'city': venue.city,
-                'state': venue.state,
-                'venues': [{
-                    'id': venue.id,
-                    'name': venue.name,
-                    'num_upcoming_shows': num_upcoming_shows
-                }]
-            })
-            city_state = venue.city + venue.state
+    for area in areas:
+        venues = Venue.query.filter_by(state=area.state).filter_by(city=area.city).order_by('name').all()
+        venue_data = []
+        data.append({
+            'city': area.city,
+            'state': area.state,
+            'venues': venue_data
+        })   
 # -----------------------------------------------------------
 #  data=[{
 #    "city": "San Francisco",
