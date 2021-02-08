@@ -109,8 +109,8 @@ class VenueForm(Form):
         'state', validators=[DataRequired()],
         choices=state_choices
     )
-    address = StringField(
-        'address', validators=[DataRequired()]
+    adress = StringField(
+        'adress', validators=[DataRequired()]
     )
     phone = StringField(
         'phone', validators=[DataRequired()]
@@ -134,7 +134,7 @@ class VenueForm(Form):
     seeking_talent_description = StringField(
         'seeking_talent_description'
     )
-    
+
 class ArtistForm(Form):
     name = StringField(
         'name', validators=[DataRequired()]
@@ -165,5 +165,5 @@ class ArtistForm(Form):
         'website', validators=[URL()]
     )
     seeking_venue = BooleanField('seeking_venue')
-   
+
     seeking_description = StringField('seeking_talent_description')
