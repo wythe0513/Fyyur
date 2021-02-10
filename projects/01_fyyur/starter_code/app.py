@@ -343,7 +343,7 @@ def create_venue_submission():
       adress = form.adress.data
       phone = form.phone.data
       genres = form.genres.data
-      image_link = form.image.data
+      image_link = form.image_link.data
       facebook_link = form.facebook_link.data
       website = form.website.data
       seeking_talent = True if 'seeking_talent' in request.form else False
@@ -368,7 +368,7 @@ def create_venue_submission():
       flash('Venue ' + request.form['name'] + ' was successfully listed!')
 
   else:
-      flash('An error occured.')
+      flash('An error occured.  Venue ' + request.form['name'] + ' could not be listed.' )
 
   # on successful db insert, flash success
   # TODO: on unsuccessful db insert, flash an error instead.
