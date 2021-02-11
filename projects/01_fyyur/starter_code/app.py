@@ -591,8 +591,8 @@ def edit_artist(artist_id):
   form.facebook_link.data = artist.facebook_link
   form.image_link.data = artist.image_link
   form.website.data = artist.website
-  form.seeking_venue.data = artist.seeking_venue
-  form.seeking_talent_description.data = artist.seeking_talent_description
+  #form.seeking_venue.data = artist.seeking_venue
+  #form.seeking_talent_description.data = artist.seeking_talent_description
   #artist={
   #  "id": 4,
   #  "name": "Guns N Petals",
@@ -612,9 +612,12 @@ def edit_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
     error = False
+    form = request.form.to_dict(True)
+    genres = request.form.getlist('genres')
+    # seeking_venue = bool(request.form.get('seeking_venue'))
     try:
-        form = ArtistForm()
         artist = Artist.query.get(artist_id)
+        artist.genres = []
         artist.name = form.name.data
         artist.name = form.name.data
         artist.phone = form.phone.data
