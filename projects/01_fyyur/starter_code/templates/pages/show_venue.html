@@ -36,10 +36,11 @@
 				<i class="fas fa-quote-left"></i> {{ venue.seeking_description }} <i class="fas fa-quote-right"></i>
 			</div>
 		</div>
-		{% else %}	
+		{% else %}
 		<p class="not-seeking">
 			<i class="fas fa-moon"></i> Not currently seeking talent
 		</p>
+
 		{% endif %}
 	</div>
 	<div class="col-sm-6">
@@ -73,7 +74,17 @@
 		</div>
 		{% endfor %}
 	</div>
+
 </section>
 
-{% endblock %}
+<a href='/venues/{{ venue.id }}/edit'><button class="btn btn-default btn-sm">Edit Venue</button></a>
 
+<button id="delete-button" data-id="{{ venue.id }}">Delete</button>
+<div>
+   <a href="/venue/{{ venue_id }}">
+      <button class="btn btn-primary btn-lg"> Delete Venue</button>
+   </a>   
+</div>
+
+
+{% endblock %}

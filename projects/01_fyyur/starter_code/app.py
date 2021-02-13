@@ -52,6 +52,9 @@ class Venue(db.Model):
     seeking_talent_description = db.Column(db.String())
     shows = db.relationship('Show', backref='venue', lazy=True)
 
+    def __repr__(self):
+        return f'<Venue {self.id} {self.name}>'
+
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -70,6 +73,9 @@ class Artist(db.Model):
     seeking_talent = db.Column(db.Boolean)
     seeking_talent_description = db.Column(db.String())
     shows = db.relationship('Show', backref='artist', lazy=True)
+
+    def __repr__(self):
+        return f'<Artist {self.id} {self.name}>'
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -83,6 +89,10 @@ class Show(db.Model):
     venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False)
     start_time = db.Column(db.DateTime, nullable=False)
 
+    def __repr__(self):
+        return f'<Show {self.id} {self.start_time} artist_id={artist_id} venue_id={venue_id}>'
+
+
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -93,7 +103,7 @@ def format_datetime(value, format='medium'):
       format="EEEE MMMM, d, y 'at' h:mma"
   elif format == 'medium':
       format="EE MM, dd, y h:mma"
-  return babel.dates.format_datetime(date, format)
+  return babel.dates.format_datetime(date, format, locale = 'en')
 
 app.jinja_env.filters['datetime'] = format_datetime
 
@@ -113,37 +123,32 @@ def venues():
 
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
-
+    venues_list = Venue.query.order_by(Venue.city, Venue.state).all()
     data = []
-    venue_data = []
-    venues = Venue.query.all()
-    num_upcoming_shows = 0
-    all_locations = set()
+    city_state = ''
+    for venue in venues_list:
+        num_upcoming_shows = db.session.query(Venue).join(Show).\
+            filter(Venue.id == venue.id, Show.start_time > datetime.now()).count()
+        if city_state == venue.city + venue.state:
+            data[len(data) - 1]['venues'].append({
+                'id': venue.id,
+                'name': venue.name,
+                'num_upcoming_shows': num_upcoming_shows
+            })
+        else:
+            data.append({
+                'city': venue.city,
+                'state': venue.state,
+                'venues': [{
+                    'id': venue.id,
+                    'name': venue.name,
+                    'num_upcoming_shows': num_upcoming_shows
+                }]
+            })
+            city_state = venue.city + venue.state
 
-    for venue in venues:
-        all_locations.add((venue.city, venue.state))
+    return render_template('pages/venues.html', areas=data)
 
-    for location in all_locations:
-        data.append({
-            "city": location[0],
-            "state": location[1],
-            "venues": venue_data
-        })
-
-    for venue in venues:
-        shows = Show.query.filter_by(venue_id=venue.id).all()
-
-        for show in shows:
-            if show.start_time > datetime.now():
-                num_upcoming_shows += 1
-
-        for venue_location in data:
-            if venue.city == venue_location['city'] and venue.state == venue_location['state']:
-                venue_data.append({
-                    "id": venue.id,
-                    "name": venue.name,
-                    "num_upcoming_shows": num_upcoming_shows
-                })
 # -----------------------------------------------------------
 #  data=[{
 #    "city": "San Francisco",
@@ -167,19 +172,18 @@ def venues():
 #    }]
 #  }]
 # ---------------------------------------------------------------
-    return render_template('pages/venues.html', areas=data)
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-    search_query = request.form.get('search_term', '')
-    search_results = Venue.query.filter(
-        Venue.name.ilike(f'%{search_query}%')).all()
+    search_term = request.form.get('search_term', '')
+    search_results = db.session.query(Venue).filter(
+        Venue.name.ilike(f'%{search_term}%')).all()
     data = []
     for result in search_results:
         data.append({
             "id": result.id,
             "name": result.name,
-            "num_of_upcoming_shows": len(Show.query.filter(Show.venue_id == result.id).filter(Show.start_time > datetime.now()).all())
+            "num_of_upcoming_shows": len(db.session.query(Show).filter(Show.venue_id == result.id).filter(Show.start_time > datetime.now()).all()),
         })
     response = {}
     response['count'] = len(search_results)
@@ -377,27 +381,27 @@ def create_venue_submission():
 
   return render_template('pages/home.html')
 
-  @app.route('/venues/<venue_id>', methods=['DELETE'])
+  @app.route('/venues/<venue_id>', methods=['POST'])
   def delete_venue(venue_id):
-
 
   # TODO: Complete this endpoint for taking a venue_id, and using
   # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
   # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
   # clicking that button delete it from the db then redirect the user to the homepage
-      error = False
       try:
-          venue = Venue.query.get(venue_id)
-          db.session.delete(venue)
-          db.session.commit()
-      except:
-         error = True
-         db.session.rollback()
-         print(sys.exc_info())
-      finally:
-          db.session.close()
+        venue = Venue.query.filter_by(id=venue_id).first_or_404()
+        # current_session = db.object_session(venue)
+        # current_session.delete(venue)
+        # current_session.commit()
+        db.session.delete(venue)
+        db.session.commit()
+        flash('The venue has been removed together with all of its shows.')
+        return render_template('pages/home.html')
 
-  return None
+      except ValueError:
+        flash('It was not possible to delete this Venue')
+
+      return redirect(url_for('venues'))
 
 #  Artists
 #  ----------------------------------------------------------------
